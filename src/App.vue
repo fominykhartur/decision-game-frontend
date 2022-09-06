@@ -1,15 +1,30 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
+  <LobbyGame :socket="socket"/>
+  <ABGame/>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import { io } from "socket.io-client";
+// const socket = io('http://localhost:3000')
+
+import LobbyGame from './components/LobbyGame.vue'
+import ABGame from './components/ABGame.vue'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    LobbyGame,
+    ABGame
+  },
+
+  data(){
+    return {
+      socket: null,
+    }
+  },
+  created(){
+    this.socket = io('http://localhost:3000')
   }
 }
 </script>
