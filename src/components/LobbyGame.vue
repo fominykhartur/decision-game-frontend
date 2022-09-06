@@ -11,6 +11,7 @@ export default {
   created() {
     this.socket.on('getClientCount', (data) => {
       console.log('Test socketa', data)
+      console.log(this.socket)
     })
   }
 }

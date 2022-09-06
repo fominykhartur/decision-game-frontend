@@ -1,7 +1,7 @@
 <template>
   <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
   <LobbyGame :socket="socket"/>
-  <ABGame/>
+  <ABGame :socket="socket"/>
 </template>
 
 <script>

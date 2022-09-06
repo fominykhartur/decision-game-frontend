@@ -1,7 +1,10 @@
 <script>
-import { io } from "socket.io-client";
-const socket = io('http://localhost:3000')
+// import { io } from "socket.io-client";
+// const socket = io('http://localhost:3000')
 export default {
+  props: {
+    socket : Object,
+  },
   data() {
     return {
       body : 0,
@@ -29,6 +32,7 @@ export default {
     }
   },
   mounted() {
+    console.log("TEST SOCKET AB\n", this.socket)
     socket.on('getClientCount', (data) => {
       console.log('Num of clients:', data);
       this.body = data;
