@@ -10,55 +10,55 @@ export default {
       body : 0,
       chatMessages : [],
       clientsList : [],
-      currentRoom: ""
+      currentRoom: "",
+      LobbyStatus: true,
     }
   },
   methods : {
     makeChoose : function(buttonID) {
       console.log(`Нажата кнопка ${buttonID}`)
-      socket.emit('getChoose', buttonID)
+      this.socket.emit('getChoose', buttonID)
     },
     createRoom : function(roomName) {
       console.log(`Покинута комната с именем ${this.currentRoom}`)
       console.log(`Создана комната с именем ${roomName}`)
-      socket.emit(`createRoom`, this.currentRoom, roomName)
+      this.socket.emit(`createRoom`, this.currentRoom, roomName)
       this.currentRoom = roomName
       // this.chatMessages = []
     },
     sendMessage : function(inputMessage) {
       console.log(`Отправлено сообщение ${inputMessage}`)
-      socket.emit(`gameChat`, this.currentRoom, inputMessage)
+      this.socket.emit(`gameChat`, this.currentRoom, inputMessage)
       this.$refs['inputChatMessage'].value = ''
     }
   },
   mounted() {
-    console.log("TEST SOCKET AB\n", this.socket)
-    socket.on('getClientCount', (data) => {
+    this.socket.on('getClientCount', (data) => {
       console.log('Num of clients:', data);
       this.body = data;
-      console.log('Socket name:', socket.id)
-      this.name = socket.id
+      console.log('Socket name:', this.socket.id)
+      this.name = this.socket.id
     });
 
-    socket.on('getClientList', (data) => {
+    this.socket.on('getClientList', (data) => {
       console.log('Connected clients: ', data)
       this.clientsList = data
     });
 
-    socket.on('getChatMessage', (chatMessage) => {
+    this.socket.on('getChatMessage', (chatMessage) => {
       this.chatMessages.push(chatMessage)
     })
   },
   created() {
-    socket.on('connect', function() {
-      console.log('Connected');
-      console.log(socket);
-    });
+    // this.socket.on('connect', function() {
+    //   console.log('Connected');
+    //   console.log(this.socket);
+    // });
 
-    socket.on('disconnect', function() {
-      console.log(socket)
-      console.log('Disconnected');
-    });
+    // this.socket.on('disconnect', function() {
+    //   console.log(this.socket)
+    //   console.log('Disconnected');
+    // });
   },
 }
 </script>
@@ -92,5 +92,8 @@ export default {
   </div>
   <div>
     <input ref="inputChatMessage" v-model.trim="inputMessage" @keyup.enter="sendMessage(inputMessage)">
+  </div>
+  <div v-if="body >= 2">
+    <p><button v-on:click="turnOffLobby(!LobbyStatus)">Ally</button></p>
   </div>
 </template>

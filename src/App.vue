@@ -10,6 +10,7 @@ import { io } from "socket.io-client";
 
 import LobbyGame from './components/LobbyGame.vue'
 import ABGame from './components/ABGame.vue'
+console.log("env ",process.env.VUE_APP_SERVER_URL)
 
 export default {
   name: 'App',
@@ -20,11 +21,17 @@ export default {
 
   data(){
     return {
-      socket: null,
+      socket: io(process.env.VUE_APP_SERVER_URL),
     }
   },
   created(){
-    this.socket = io('http://localhost:3000')
+    this.socket.on('connect', function() {
+      console.log('Connected');
+    });
+
+    this.socket.on('disconnect', function() {
+      console.log('Disconnected');
+    });
   }
 }
 </script>
