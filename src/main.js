@@ -1,6 +1,10 @@
 import { createApp } from 'vue'
-import axios from 'axios'
-import VueAxios from 'vue-axios'
 import App from './App.vue'
+import vuetify from './plugins/vuetify'
+import { loadFonts } from './plugins/webfontloader'
 
-createApp(App).use(VueAxios, axios).mount('#app')
+loadFonts()
+
+createApp(App)
+  .use(vuetify)
+  .mount('#app')
