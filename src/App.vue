@@ -1,7 +1,6 @@
 <template>
-  <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
-  <LobbyGame :socket="socket"/>
-  <ABGame :socket="socket"/>
+  <LobbyGame v-if = "!inGame" :socket="socket"/>
+  <ABGame v-if="inGame" :socket="socket"/>
 </template>
 
 <script>
@@ -22,6 +21,7 @@ export default {
   data(){
     return {
       socket: io(process.env.VUE_APP_SERVER_URL),
+      inGame : false,
     }
   },
   created(){
@@ -32,6 +32,10 @@ export default {
     this.socket.on('disconnect', function() {
       console.log('Disconnected');
     });
+
+    this.socket.on('joinedGame', (inGame) => {
+      this.inGame = inGame;
+    })
   }
 }
 </script>

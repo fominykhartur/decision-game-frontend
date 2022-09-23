@@ -1,110 +1,139 @@
 <script>
-// import { io } from "socket.io-client";
-// const socket = io('http://localhost:3000')
 export default {
   props: {
     socket : Object,
   },
   data() {
     return {
-      body : 0,
-      chatMessages : [],
-      rooms : [],
-      clientsList : [],
-      currentRoom: "",
-      LobbyStatus: true,
+      startButtonText : "Начать игру",
+      countBeforeStart : 1,
+      host : false,
+      roomData : {},
+      showPlayersList : false,
+      gameStarted : false,
+      roundNumber : 1,
+      roundCounter : 1,
     }
   },
   methods : {
+    leaveRoom : function() {
+      console.log(`${this.roomData.roomName} комната покинута`)
+      this.socket.emit('leaveRoom', this.roomData)
+    },
+    startGame : function() {
+      console.log('Триггер старта')
+      this.socket.emit('triggerStart', {roomName: this.roomData.roomName})
+      // this.triggerStartGame()
+    },
+    triggerStartGame : function() {
+      this.startButtonText = `Начало через ${this.countBeforeStart}...`
+      if (this.countBeforeStart > 0){
+        setTimeout(() => {
+          this.countBeforeStart --
+          this.triggerStartGame()
+          console.log('Статус клиента',this.host)
+        }, 1000)
+      }
+      else if (this.host === true) {
+        this.socket.emit('startGame', { roomName: this.roomData.roomName})
+      }
+    },
+    roundCounterDown : function() {
+      if (this.roundCounter > 0) {
+        setTimeout(() => {
+          this.roundCounter --
+          this.roundCounterDown()
+        }, 1000)
+      }
+      else {
+        this.roundCounter = 30
+      }
+    },
     makeChoose : function(buttonID) {
       console.log(`Нажата кнопка ${buttonID}`)
       this.socket.emit('getChoose', buttonID)
-    },
-    createRoom : function(roomName) {
-      console.log(`Покинута комната с именем ${this.currentRoom}`)
-      console.log(`Создана комната с именем ${roomName}`)
-      this.socket.emit(`createRoom`, this.currentRoom, roomName)
-      this.currentRoom = roomName
-      // this.chatMessages = []
-    },
-    joinRoom: function(room) {
-      console.log('Переход в комнату ',room)
-      this.socket.emit('changeRoom', this.currentRoom, room)
-      this.currentRoom = room
     },
     sendMessage : function(inputMessage) {
       console.log(`Отправлено сообщение ${inputMessage}`)
       this.socket.emit(`gameChat`, this.currentRoom, inputMessage)
       this.$refs['inputChatMessage'].value = ''
-    }
+    },
   },
+  // watch: {
+  //   roundTimer : function(){
+  //     if (this.gameStarted === true){
+  //       console.log('Start start')
+  //       this.roundCounter--
+  //     }
+  //   },
+  // },
   mounted() {
-    this.socket.on('getClientCount', (data) => {
-      console.log('Num of clients:', data);
-      this.body = data;
-      console.log('Socket name:', this.socket.id)
-      this.name = this.socket.id
-    });
-
-    this.socket.on('getClientList', (data) => {
-      console.log('Connected clients: ', data)
-      this.clientsList = data
-    });
-
-    this.socket.on('getRooms', (rooms) => {
-      console.log('rooms', rooms)
-      this.rooms = rooms
-    })
-
     this.socket.on('getChatMessage', (chatMessage) => {
       this.chatMessages.push(chatMessage)
+    }),
+    this.socket.on('gameStatus', (status) => {
+      this.gameStarted = status
+      this.roundCounterDown()
+      console.log('Игра началась!')
+    }),
+    this.socket.on('triggerStartGame', () => {
+      this.triggerStartGame()
+    }),
+    this.socket.on('hostStatus', (hostStatus) => {
+      this.host = hostStatus
+    }),
+    this.socket.on('getGameData', (data) => {
+      console.log('terst',data)
     })
   },
   created() {
-    // this.socket.on('connect', function() {
-    //   console.log('Connected');
-    //   console.log(this.socket);
-    // });
-
-    // this.socket.on('disconnect', function() {
-    //   console.log(this.socket)
-    //   console.log('Disconnected');
-    // });
+    this.socket.on('roomData', (data) => {
+      console.log('Room data got',data)
+      this.roomData = data; 
+    })
   },
 }
 </script>
 
 <template>
-  <h1>{{ currentRoom }}</h1>
-  <h2>Мое имя:{{name}}</h2>
-  <div>{{body}}</div>
-  <div>{{clientsList}}</div>
-  <div>
-  <ul id="example-1">
-    <li v-for="item in clientsList" :key="item">
-      {{item}}
-    </li>
-  </ul>
-  </div>
-  <div v-if="body >= 2">
-    <p><button v-on:click="makeChoose('A')">Ally</button></p>
-    <p><button v-on:click="makeChoose('B')">Betray</button></p>
-  </div>
-  <div>
-    <input v-model.trim="roomName" placeholder="отредактируй меня">
-    <button v-on:click="createRoom(roomName)">Создать комнату</button>
-  </div>
-  <div>
-  <ul id="example-2">
-    <li v-for="message in chatMessages" :key="message">
-      <span>{{message}}</span>
-    </li>
-  </ul>
-  </div>
-  <div>
-    <input ref="inputChatMessage" v-model.trim="inputMessage" @keyup.enter="sendMessage(inputMessage)">
-  </div>
-  <div v-for="room in rooms" :key="room">
-    <button v-on:click="joinRoom(room)">{{room}}</button>
-  </div>
+  <v-container>
+    <h1 align="center">Комната: {{roomData.roomName}}</h1>
+    <v-row >
+      <v-col align="left" cols="2">
+        <v-btn min-width=170 @click="leaveRoom" :disabled="this.gameStarted">Выйти из комнаты</v-btn>
+          <v-card class="mt-4" min-width=170 max-width="200">
+            <v-list density="compact">
+              <v-list-subheader>
+                <v-btn @Click="this.showPlayersList=!this.showPlayersList" size='x-small' elevation="0">
+                Список игроков
+                </v-btn>
+              </v-list-subheader>
+              <!-- v-if='showPlayersList' -->
+              <v-list-item
+                v-for="player in roomData.playersInfo"
+                :key="player.socketID"
+                active-color="primary"
+              >
+                <v-list-item-title v-if="player.playerName" v-text="player.playerName"></v-list-item-title>
+              </v-list-item>
+            </v-list>
+        </v-card>
+      </v-col>
+      <v-col cols="10" align="center">
+        <v-btn v-if='!this.gameStarted' align="right" min-width=170 :disabled="this.roomData.playersCount === 1" @click='startGame'>
+          {{startButtonText}}
+        </v-btn>
+        <v-container fluid='true' v-if='this.gameStarted'>
+          <h2 class="mt-2">Раунд: {{roundNumber}}</h2>
+          <h2 class="mt-2">До конца раунда: {{roundCounter}}</h2>
+          <h2>Противник: ???</h2>
+          <h3>Сделай свой выбор</h3>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoose('A')">Союз</v-btn>
+          <br>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoose('B')">Предательство</v-btn>
+        </v-container>
+      </v-col>
+        <!-- <v-col align="center"></v-col> -->
+    </v-row>
+  </v-container>
 </template>
