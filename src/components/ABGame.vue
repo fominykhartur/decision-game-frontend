@@ -9,10 +9,11 @@ export default {
       countBeforeStart : 1,
       host : false,
       roomData : {},
+      enemyName : "???",
       showPlayersList : false,
       gameStarted : false,
-      roundNumber : 1,
-      roundCounter : 1,
+      roundNumber : 0,
+      roundCounter : 5,
     }
   },
   methods : {
@@ -47,11 +48,21 @@ export default {
       }
       else {
         this.roundCounter = 30
+        if (this.host === true){
+          console.log('Конец раунда')
+          this.socket.emit('endRound', { roomName : this.roomData.roomName,
+                                         roundNumber: this.roundNumber
+                                       })
+        }
       }
     },
-    makeChoose : function(buttonID) {
+    makeChoice : function(buttonID) {
       console.log(`Нажата кнопка ${buttonID}`)
-      this.socket.emit('getChoose', buttonID)
+      this.socket.emit('getChoice', { roomName: this.roomData.roomName, 
+                                      enemySocketID: this.enemyName,
+                                      roundNumber: this.roundNumber,
+                                      buttonID: buttonID 
+                                    })
     },
     sendMessage : function(inputMessage) {
       console.log(`Отправлено сообщение ${inputMessage}`)
@@ -89,7 +100,12 @@ export default {
   created() {
     this.socket.on('roomData', (data) => {
       console.log('Room data got',data)
-      this.roomData = data; 
+      this.roomData = data;
+      if (this.gameStarted === true){
+        var playerData = this.roomData.rounds[this.roundNumber].playersData.find((player) => player.playerSocketID === this.socket.id)
+        this.enemyName = playerData.enemySocketID
+      }
+      // var itemobj = obje.rounds[0].playersData.find((item) => item.playerSocketID === socket.id)
     })
   },
 }
@@ -124,13 +140,13 @@ export default {
           {{startButtonText}}
         </v-btn>
         <v-container fluid='true' v-if='this.gameStarted'>
-          <h2 class="mt-2">Раунд: {{roundNumber}}</h2>
+          <h2 class="mt-2">Раунд: {{roundNumber+1}}</h2>
           <h2 class="mt-2">До конца раунда: {{roundCounter}}</h2>
-          <h2>Противник: ???</h2>
+          <h2>Противник: {{enemyName}}</h2>
           <h3>Сделай свой выбор</h3>
-          <v-btn class="mt-2" min-width=170 @Click="makeChoose('A')">Союз</v-btn>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoice('A')">Союз</v-btn>
           <br>
-          <v-btn class="mt-2" min-width=170 @Click="makeChoose('B')">Предательство</v-btn>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoice('B')">Предательство</v-btn>
         </v-container>
       </v-col>
         <!-- <v-col align="center"></v-col> -->

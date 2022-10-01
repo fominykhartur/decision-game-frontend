@@ -44,6 +44,9 @@ export default {
     clear : function() {
       this.roomName = ''
     },
+    sendMessage : function(message) {
+      console.log('test chat', message)
+    }
   },
   created() {
     this.socket.on('getClientCount', (data) => {
