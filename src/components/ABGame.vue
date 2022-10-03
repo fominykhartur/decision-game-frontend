@@ -14,6 +14,7 @@ export default {
       gameStarted : false,
       roundNumber : 0,
       roundCounter : 5,
+      playerCount : 3,
     }
   },
   methods : {
@@ -47,7 +48,7 @@ export default {
         }, 1000)
       }
       else {
-        this.roundCounter = 30
+        this.roundCounter = 5
         if (this.host === true){
           console.log('Конец раунда')
           this.socket.emit('endRound', { roomName : this.roomData.roomName,
@@ -93,17 +94,23 @@ export default {
     this.socket.on('hostStatus', (hostStatus) => {
       this.host = hostStatus
     }),
+    this.socket.on('startNewRound', () => {
+      console.log('Начало нового раунда')
+      this.roundNumber++
+      this.roundCounterDown()
+    }),
     this.socket.on('getGameData', (data) => {
       console.log('terst',data)
     })
   },
   created() {
     this.socket.on('roomData', (data) => {
-      console.log('Room data got',data)
+      console.log('Данные комнаты получены',data)
       this.roomData = data;
       if (this.gameStarted === true){
         var playerData = this.roomData.rounds[this.roundNumber].playersData.find((player) => player.playerSocketID === this.socket.id)
         this.enemyName = playerData.enemySocketID
+        this.playerCount = playerData.playerCount
       }
       // var itemobj = obje.rounds[0].playersData.find((item) => item.playerSocketID === socket.id)
     })
@@ -117,6 +124,33 @@ export default {
     <v-row >
       <v-col align="left" cols="2">
         <v-btn min-width=170 @click="leaveRoom" :disabled="this.gameStarted">Выйти из комнаты</v-btn>
+        <v-btn class="mt-4" @Click="this.showPlayersList=!this.showPlayersList">
+        Список игроков
+        </v-btn>
+        <br>
+        <v-simple-table min-width=170 max-width="200">
+          <thead>
+            <tr>
+              <th class="text">
+                Имя
+              </th>
+              <th class="text">
+                Очки
+              </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr
+            v-for="player in roomData.playersInfo"
+            :key="player.socketID"
+            >
+              <td align="center" justify="end">{{ player.playerName }}</td>
+              <td align="center" justify="end">{{ playerCount }}</td>
+            </tr>
+          </tbody>
+        </v-simple-table>
+
+
           <v-card class="mt-4" min-width=170 max-width="200">
             <v-list density="compact">
               <v-list-subheader>
