@@ -12,9 +12,11 @@ export default {
       enemyName : "???",
       showPlayersList : false,
       gameStarted : false,
+      choiceDone : false,
       roundNumber : 0,
       roundCounter : 5,
       playerCount : 3,
+      window : 0,
     }
   },
   methods : {
@@ -59,11 +61,27 @@ export default {
     },
     makeChoice : function(buttonID) {
       console.log(`Нажата кнопка ${buttonID}`)
+      this.choiceDone = true
       this.socket.emit('getChoice', { roomName: this.roomData.roomName, 
                                       enemySocketID: this.enemyName,
                                       roundNumber: this.roundNumber,
                                       buttonID: buttonID 
                                     })
+    },
+    getPlayerCount : function(playerSocketID) {
+      console.log('Получение очков игрока')
+      if (this.roundNumber > 0){
+        return this.roomData.rounds[this.roundNumber].playersData.find((player) => player.playerSocketID === playerSocketID).playerCount
+      }
+      return 3
+    },
+    getPlayerChoiceResult : function(playerChoice, enemyChoice) {
+      switch (playerChoice + enemyChoice){
+        case 'AA': return "+2"
+        case 'AB': return "-3"
+        case 'BA': return "+3"
+        case 'BB': return "0" 
+      }
     },
     sendMessage : function(inputMessage) {
       console.log(`Отправлено сообщение ${inputMessage}`)
@@ -97,6 +115,7 @@ export default {
     this.socket.on('startNewRound', () => {
       console.log('Начало нового раунда')
       this.roundNumber++
+      this.choiceDone = false
       this.roundCounterDown()
     }),
     this.socket.on('getGameData', (data) => {
@@ -124,41 +143,41 @@ export default {
     <v-row >
       <v-col align="left" cols="2">
         <v-btn min-width=170 @click="leaveRoom" :disabled="this.gameStarted">Выйти из комнаты</v-btn>
-        <v-btn class="mt-4" @Click="this.showPlayersList=!this.showPlayersList">
+        <v-btn min-width=170 class="mt-4" @Click="this.showPlayersList=!this.showPlayersList">
         Список игроков
         </v-btn>
         <br>
-        <v-simple-table min-width=170 max-width="200">
-          <thead>
-            <tr>
-              <th class="text">
-                Имя
-              </th>
-              <th class="text">
-                Очки
-              </th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr
-            v-for="player in roomData.playersInfo"
-            :key="player.socketID"
-            >
-              <td align="center" justify="end">{{ player.playerName }}</td>
-              <td align="center" justify="end">{{ playerCount }}</td>
-            </tr>
-          </tbody>
-        </v-simple-table>
+          <v-table >
+            <thead>
+              <tr>
+                <th class="text">
+                  Имя
+                </th>
+                <th class="text">
+                  Очки
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr
+              v-for="player in roomData.playersInfo"
+              :key="player.socketID"
+              >
+                <td class="text" v-if="player.socketID === socket.id" align="center" justify="end"><b>{{ player.playerName }}</b></td>
+                <td class="text" v-else align="center" justify="end">{{ player.playerName }}</td>
+                <td class="text" align="center" justify="end">{{ getPlayerCount(player.socketID) }}</td>
+              </tr>
+            </tbody>
+          </v-table>
 
-
-          <v-card class="mt-4" min-width=170 max-width="200">
+<!--           <v-card class="mt-4" min-width=170 max-width="200">
             <v-list density="compact">
               <v-list-subheader>
                 <v-btn @Click="this.showPlayersList=!this.showPlayersList" size='x-small' elevation="0">
                 Список игроков
                 </v-btn>
               </v-list-subheader>
-              <!-- v-if='showPlayersList' -->
+              v-if='showPlayersList'
               <v-list-item
                 v-for="player in roomData.playersInfo"
                 :key="player.socketID"
@@ -167,7 +186,7 @@ export default {
                 <v-list-item-title v-if="player.playerName" v-text="player.playerName"></v-list-item-title>
               </v-list-item>
             </v-list>
-        </v-card>
+        </v-card> -->
       </v-col>
       <v-col cols="10" align="center">
         <v-btn v-if='!this.gameStarted' align="right" min-width=170 :disabled="this.roomData.playersCount === 1" @click='startGame'>
@@ -178,12 +197,115 @@ export default {
           <h2 class="mt-2">До конца раунда: {{roundCounter}}</h2>
           <h2>Противник: {{enemyName}}</h2>
           <h3>Сделай свой выбор</h3>
-          <v-btn class="mt-2" min-width=170 @Click="makeChoice('A')">Союз</v-btn>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoice('A')" :disabled="this.choiceDone">Союз</v-btn>
           <br>
-          <v-btn class="mt-2" min-width=170 @Click="makeChoice('B')">Предательство</v-btn>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoice('B')" :disabled="this.choiceDone">Предательство</v-btn>
         </v-container>
       </v-col>
         <!-- <v-col align="center"></v-col> -->
     </v-row>
+
+<!--     
+    <v-table v-if="roundNumber > 0">
+      <thead>
+        <tr>
+          <th colspan=2 class="text" v-for="teamNumber in ['I', 'II', 'III', 'IV', 'V']" :key='teamNumber'>
+            {{teamNumber}}
+          </th>
+        </tr>
+        <tr>
+          <th class="text"  v-for="player in roomData.rounds[this.roundNumber].playersData" :key='player'>
+            <template v-if="player.playerSocketID === socket.id">
+              <b>{{player.playerSocketID}}</b>
+            </template>
+            <template v-else>
+              {{player.playerSocketID}}
+            </template>
+          </th>
+        </tr>
+      </thead>
+      <tbody>      
+        <tr>
+          <td v-for="player in roomData.rounds[this.roundNumber].playersData" :key='player'>
+            {{player.playerChoice}}
+          </td>
+        </tr>
+        <tr>
+          <td v-for="player in roomData.rounds[this.roundNumber].playersData" :key='player'>
+            {{player.enemyChoice}}
+          </td>
+        </tr>
+        <tr>
+          <td v-for="player in roomData.rounds[this.roundNumber].playersData" :key='player'>
+            {{getPlayerChoiceResult(player.playerChoice, player.enemyChoice)}}
+          </td>
+        </tr>
+        <tr>
+          <td v-for="player in roomData.rounds[this.roundNumber].playersData" :key='player'>
+            {{player.playerCount}}
+          </td>
+        </tr>
+      </tbody>
+    </v-table> -->
+
+
+  <v-window
+    v-model="window"
+    show-arrows="hover"
+    v-if="roundNumber > 0"
+  >
+    <v-window-item
+      v-for="n in roomData.rounds.length-1"
+      :key="n"
+    >
+    <!-- class="d-flex justify-center align-center" -->
+      <v-card align="center" justify="end">
+        Раунд {{n}}
+    <v-table>
+      <thead>
+        <tr>
+          <th colspan=2 class="text" v-for="teamNumber in ['I', 'II', 'III', 'IV', 'V'].slice(0, roomData.playersInfo.length / 2 >> 0)" :key='teamNumber'>
+            {{teamNumber}}
+          </th>
+        </tr>
+        <tr>
+          <th class="text"  v-for="player in roomData.rounds[n].playersData" :key='player'>
+            <template v-if="player.playerSocketID === socket.id">
+              <b>{{player.playerSocketID}}</b>
+            </template>
+            <template v-else>
+              {{player.playerSocketID}}
+            </template>
+          </th>
+        </tr>
+      </thead>
+      <tbody>      
+        <tr>
+          <td align="center" justify="end" v-for="player in roomData.rounds[n-1].playersData" :key='player'>
+            {{player.playerChoice}}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" justify="end" v-for="player in roomData.rounds[n-1].playersData" :key='player'>
+            {{player.enemyChoice}}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" justify="end" v-for="player in roomData.rounds[n-1].playersData" :key='player'>
+            {{getPlayerChoiceResult(player.playerChoice, player.enemyChoice)}}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" justify="end" v-for="player in roomData.rounds[n-1].playersData" :key='player'>
+            {{player.playerCount}}
+          </td>
+        </tr>
+      </tbody>
+          </v-table>
+      </v-card>
+    </v-window-item>
+  </v-window>
+
+
   </v-container>
 </template>
