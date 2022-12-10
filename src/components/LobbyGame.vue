@@ -1,6 +1,6 @@
 <script>
 // import { required, maxLength } from '@vuelidate/validators'
-
+import './LobbyGame.module.css'
 export default {
   props: {
     socket : Object,
@@ -13,7 +13,7 @@ export default {
       playerName : '',
       roomName : '',
       roomList : [],
-      currentRoom : '',
+      currentRoom : 'Lobby',
       showRoomStatus : false,
     }
   },
@@ -21,7 +21,7 @@ export default {
     createRoom : function(roomName) {
       // console.log(`Покинута комната с именем ${this.currentRoom}`)
       console.log(`Создана комната с именем ${roomName}`)
-      console.log(`${roomName.length}`)
+      // console.log(`${roomName.length}`)
       this.socket.emit(`createRoom`, {currentRoom : this.currentRoom,
                                       room : roomName,
                                       playerName : this.playerName,
@@ -56,7 +56,7 @@ export default {
   },
   mounted() {
     this.socket.on('getRooms', (rooms) => {
-      console.log('rooms', rooms)
+      console.log('Получение списка всех комнат\n', rooms)
       this.roomList = rooms
     })
   }

@@ -1,4 +1,5 @@
 <script>
+import './ABGame.module.css'
 export default {
   props: {
     socket : Object,
@@ -12,11 +13,15 @@ export default {
       enemyName : "???",
       showPlayersList : false,
       gameStarted : false,
+      escaping: false,
+      escapingTimer: false,
+      youEscaped: false,
       choiceDone : false,
       roundNumber : 0,
       roundCounter : 5,
       playerCount : 3,
       window : 0,
+      // timerText: "До конца раунда:"
     }
   },
   methods : {
@@ -43,6 +48,10 @@ export default {
       }
     },
     roundCounterDown : function() {
+      if(this.escapingTimer === true){
+        this.roundCounter = 4
+        this.escapingTimer = false
+      }
       if (this.roundCounter > 0) {
         setTimeout(() => {
           this.roundCounter --
@@ -50,11 +59,18 @@ export default {
         }, 1000)
       }
       else {
+        if(this.escaping === true){
+          if(this.host === true){
+            this.socket.emit('triggerEndGame', {roomName: this.roomData.roomName})
+          }
+          return
+        }
         this.roundCounter = 5
         if (this.host === true){
           console.log('Конец раунда')
           this.socket.emit('endRound', { roomName : this.roomData.roomName,
-                                         roundNumber: this.roundNumber
+                                         roundNumber: this.roundNumber,
+                                         escaping: false,
                                        })
         }
       }
@@ -67,6 +83,21 @@ export default {
                                       roundNumber: this.roundNumber,
                                       buttonID: buttonID 
                                     })
+    },
+    escape : function() {
+      if(this.escaping === false){
+        console.log("Ты начал побег")
+            this.socket.emit('endRound', { roomName : this.roomData.roomName,
+                                       roundNumber: this.roundNumber,
+                                       escaping: true
+                                     })
+      }
+      else{
+        console.log("Ты присоединился к побегу")
+      }
+      this.youEscaped = true
+      this.socket.emit('escapingTeamFormation', {roomName : this.roomData.roomName})
+
     },
     getPlayerCount : function(playerSocketID) {
       console.log('Получение очков игрока')
@@ -118,6 +149,11 @@ export default {
       this.choiceDone = false
       this.roundCounterDown()
     }),
+    this.socket.on('escapingTime', () => {
+      console.log('Начался побег')
+      this.escaping = true
+      this.escapingTimer = true
+    })
     this.socket.on('getGameData', (data) => {
       console.log('terst',data)
     })
@@ -194,12 +230,14 @@ export default {
         </v-btn>
         <v-container fluid='true' v-if='this.gameStarted'>
           <h2 class="mt-2">Раунд: {{roundNumber+1}}</h2>
-          <h2 class="mt-2">До конца раунда: {{roundCounter}}</h2>
+          <h2 class="mt-2">До конца {{escaping ? "побега" : "раунда"}} {{roundCounter}}</h2>
           <h2>Противник: {{enemyName}}</h2>
           <h3>Сделай свой выбор</h3>
-          <v-btn class="mt-2" min-width=170 @Click="makeChoice('A')" :disabled="this.choiceDone">Союз</v-btn>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoice('A')" :disabled="this.choiceDone || this.escaping">Союз</v-btn>
           <br>
-          <v-btn class="mt-2" min-width=170 @Click="makeChoice('B')" :disabled="this.choiceDone">Предательство</v-btn>
+          <v-btn class="mt-2" min-width=170 @Click="makeChoice('B')" :disabled="this.choiceDone || this.escaping">Предательство</v-btn>
+          <br>
+          <v-btn class="mt-2" min-width=170 @Click="escape()" :disabled="!(this.playerCount >= 3) || this.youEscaped === true">{{this.escaping === false ?"Начать побег":"Присоединиться к побегу"}}</v-btn>
         </v-container>
       </v-col>
         <!-- <v-col align="center"></v-col> -->

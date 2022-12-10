@@ -9,7 +9,7 @@ import { io } from "socket.io-client";
 
 import LobbyGame from './components/LobbyGame.vue'
 import ABGame from './components/ABGame.vue'
-console.log("env ",process.env.VUE_APP_SERVER_URL)
+console.log("Окружение: ",process.env.VUE_APP_SERVER_URL)
 
 export default {
   name: 'App',
@@ -26,11 +26,11 @@ export default {
   },
   created(){
     this.socket.on('connect', function() {
-      console.log('Connected');
+      console.log('Сервер подключен');
     });
 
     this.socket.on('disconnect', function() {
-      console.log('Disconnected');
+      console.log('Сервер отключен');
     });
 
     this.socket.on('joinedGame', (inGame) => {
