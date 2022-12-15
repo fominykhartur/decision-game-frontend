@@ -29,6 +29,13 @@ export default {
       this.currentRoom = roomName
       this.roomName = ''
     },
+    checkRoomGameStatus: function(){
+      if(this.roomList.includes(this.roomList.find(room => room.roomName === this.roomName))){
+        return this.roomList.filter(room => room.roomName === this.roomName)[0].gameStarted === false
+      }else{
+        return true
+      }
+    },
     joinRoom : function(roomName) {
       // console.log(`Покинута комната с именем ${this.currentRoom}`)
       console.log(`Подключение комната с именем ${roomName}`)
@@ -81,11 +88,14 @@ export default {
             label="Название комнаты"
             required
           ></v-text-field>
-          <v-btn :disabled="!(roomName && playerName)" 
+          <v-btn :disabled="!((roomName && playerName) && checkRoomGameStatus())" 
             class="mr-4"
             @click="roomList.includes(roomList.find(room => room.roomName === roomName)) ? joinRoom(roomName) : createRoom(roomName)"
           > 
-          {{ roomList.includes(roomList.find(room => room.roomName === roomName)) ? "Подключиться" : "Создать комнату"}}
+          {{ roomList.includes(roomList.find(room => room.roomName === roomName)) ? 
+            (roomList.filter(room => room.roomName === roomName)[0].gameStarted === false ? "Подключиться" : "Игра началась") : 
+            "Создать комнату"
+          }}
           </v-btn>
           <v-btn @click="clear">
             Очистить
@@ -125,13 +135,15 @@ export default {
               v-for="room in roomList"
               :key="room"
             >
-              <td align="center" justify="end">{{ room.roomName }}</td>
-              <td align="center" justify="end">{{ room.playersCount }}</td>
-              <td align="center" justify="end">
-                <v-btn class="ma-4" size="small" @click="joinRoom(room.roomName)" :disabled='!this.playerName'>
-                  {{playerName ? 'Подключиться' : 'Введите имя'}}
-                </v-btn>
-              </td>
+              <template v-if="room.gameStarted === false">
+                <td align="center" justify="end">{{ room.roomName }}</td>
+                <td align="center" justify="end">{{ room.playersCount }}</td>
+                <td align="center" justify="end">
+                  <v-btn class="ma-4" size="small" @click="joinRoom(room.roomName)" :disabled='!this.playerName'>
+                    {{playerName ? 'Подключиться' : 'Введите имя'}}
+                  </v-btn>
+                </td>
+              </template>
             </tr>
           </tbody>
         </v-table>

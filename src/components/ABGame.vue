@@ -21,6 +21,7 @@ export default {
       roundCounter : 5,
       playerCount : 3,
       window : 0,
+      resultShowed: false,
       // timerText: "До конца раунда:"
     }
   },
@@ -153,14 +154,18 @@ export default {
       console.log('Начался побег')
       this.escaping = true
       this.escapingTimer = true
-    })
+    }),
+    this.socket.on('showResult', () => {
+      console.log('Игра завершена\nРезультаты отображены')
+      this.resultShowed = true
+    }),
     this.socket.on('getGameData', (data) => {
       console.log('terst',data)
     })
   },
   created() {
     this.socket.on('roomData', (data) => {
-      console.log('Данные комнаты получены',data)
+      console.log('Данные комнаты получены\n',data)
       this.roomData = data;
       if (this.gameStarted === true){
         var playerData = this.roomData.rounds[this.roundNumber].playersData.find((player) => player.playerSocketID === this.socket.id)
@@ -237,7 +242,7 @@ export default {
           <br>
           <v-btn class="mt-2" min-width=170 @Click="makeChoice('B')" :disabled="this.choiceDone || this.escaping">Предательство</v-btn>
           <br>
-          <v-btn class="mt-2" min-width=170 @Click="escape()" :disabled="!(this.playerCount >= 3) || this.youEscaped === true">{{this.escaping === false ?"Начать побег":"Присоединиться к побегу"}}</v-btn>
+          <v-btn class="mt-2" min-width=170 @Click="escape()" :disabled="!(this.playerCount >= 9) || this.youEscaped === true">{{this.escaping === false ?"Начать побег":"Присоединиться к побегу"}}</v-btn>
         </v-container>
       </v-col>
         <!-- <v-col align="center"></v-col> -->
@@ -344,6 +349,31 @@ export default {
     </v-window-item>
   </v-window>
 
+<template>
+  <v-row>
+    <v-dialog
+      v-model="resultShowed"
+      persistent
+      max-width="500"
+    >
+      <v-card>
+        <v-card-title class="text-h5">
+          Результат игры
+        </v-card-title>
+        <v-card-text>
+          Список сбежавших игроков:
+          <template v-for="player in roomData.playersInfo" :key='player.socketID'>
+            <p v-if="player.escaped === true">{{`${player.playerName}` }}</p>
+          </template>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn min-width=170 @click="leaveRoom">Выйти из комнаты</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-row>
+</template>
 
   </v-container>
 </template>
