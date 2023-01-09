@@ -15,6 +15,9 @@ export default {
       roomList : [],
       currentRoom : 'Lobby',
       showRoomStatus : false,
+      rules: [v => v.length <= 10 || 'Максимум 10 символов'],
+      msgInputData: null,
+      lobbyChat: ''
     }
   },
   methods: {
@@ -51,8 +54,13 @@ export default {
     clear : function() {
       this.roomName = ''
     },
-    sendMessage : function(message) {
-      console.log('test chat', message)
+    sendMessage : function() {
+      console.log('Отправлено сообщение в чат:', this.msgInputData)
+      this.socket.emit('gameChat', {currentRoom : this.currentRoom,
+                                    playerName : this.playerName,
+                                    message: this.msgInputData
+                                   })
+      this.msgInputData = null
     }
   },
   created() {
@@ -65,6 +73,11 @@ export default {
     this.socket.on('getRooms', (rooms) => {
       console.log('Получение списка всех комнат\n', rooms)
       this.roomList = rooms
+    }),
+
+    this.socket.on('getChatData', (data) => {
+      console.log('Обновление данных чата', data['message'])
+      this.lobbyChat += `${(data['playerName'])}: "${(data['message'])}"\n`
     })
   }
 }
@@ -77,6 +90,7 @@ export default {
         <h1>Лобби</h1>
         <v-text-field
           v-model="playerName"
+          :rules="rules"
           :counter="10"
           label="Имя игрока"
           required
@@ -84,11 +98,12 @@ export default {
         <v-form>
           <v-text-field
             v-model="roomName"
+            :rules="rules"
             :counter="10"
             label="Название комнаты"
             required
           ></v-text-field>
-          <v-btn :disabled="!((roomName && playerName) && checkRoomGameStatus())" 
+          <v-btn :disabled="!((roomName && (roomName.length <= 10) && playerName && (playerName.length <= 10)) && checkRoomGameStatus())" 
             class="mr-4"
             @click="roomList.includes(roomList.find(room => room.roomName === roomName)) ? joinRoom(roomName) : createRoom(roomName)"
           > 
@@ -114,6 +129,7 @@ export default {
         </v-btn>
         <v-text-field class="ma-4"
           v-model="playerName"
+          :rules="rules"
           :counter="10"
           label="Имя игрока"
           required
@@ -139,7 +155,7 @@ export default {
                 <td align="center" justify="end">{{ room.roomName }}</td>
                 <td align="center" justify="end">{{ room.playersCount }}</td>
                 <td align="center" justify="end">
-                  <v-btn class="ma-4" size="small" @click="joinRoom(room.roomName)" :disabled='!this.playerName'>
+                  <v-btn class="ma-4" size="small" @click="joinRoom(room.roomName)" :disabled='!(playerName && (playerName.length <= 10))'>
                     {{playerName ? 'Подключиться' : 'Введите имя'}}
                   </v-btn>
                 </td>
@@ -149,5 +165,22 @@ export default {
         </v-table>
       </v-col>
     </v-row>
+    <v-textarea
+    v-model.trim = "lobbyChat"
+    label="Чат лобби"
+    variant="outlined"
+    class="mx-2"
+    rows="8"
+    readonly
+    ></v-textarea>
+    <v-textarea
+    v-model.trim = "msgInputData"
+    append-inner-icon="mdi-comment"
+    class="mx-2"
+    rows="1"
+    :label= '!(playerName && (playerName.length <= 10))? "Введите имя" : "Написать сообщение"'
+    :disabled='!(playerName && (playerName.length <= 10))'
+    @keydown.enter = "sendMessage()"
+    ></v-textarea>
   </v-container>
 </template>
